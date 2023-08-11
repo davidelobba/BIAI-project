@@ -1,0 +1,7 @@
+/output/*
+/data/*
+/cma_es_output/*
+/cppn_output/*
+/wandb/*
+/weights/*
+/__pycache__/*
