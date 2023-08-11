@@ -1,0 +1,21 @@
+dataset: cifar10
+network: resnet50
+weights_path: '/home/disi/project2/weights/resnet50_best_model_wts_9556.pth'
+
+ga:
+  population_size: 300
+  crossover_probability: 0.5
+  mutation_probability: 0.5
+  generations: 200
+
+cma_es:
+  population_size: 300
+  generations: 200
+  sigma: 0.1
+  learning_rate: 0.1
+
+cppn:
+  population_size: 5
+  crossover_probability: 0.5
+  mutation_probability: 0.5
+  generations: 2
