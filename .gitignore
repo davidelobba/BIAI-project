@@ -1,7 +1,11 @@
-/output/*
+/ga_output/*
 /data/*
 /cma_es_output/*
 /cppn_output/*
 /wandb/*
 /weights/*
 /__pycache__/*
+/pso_output/*
+dataset.py
+inference.py
+main.py

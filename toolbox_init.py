@@ -1,8 +1,6 @@
 from deap import base, creator, tools, cma
-import numpy as np
 import random
-from fitness import cppn_fitness
-import torch
+
 
 def create_ga_toolbox(fitness):
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
@@ -36,19 +34,7 @@ def create_cma_es_toolbox(fitness, ngen=1000, sigma=0.5, population_size=10):
     return toolbox
 
 
-def create_cppn_toolbox(fitness, cppn_model, ind_size, network):
-    """
-    Create a DEAP toolbox for evolving CPPNs.
-    
-    Parameters:
-    - fitness_function: Function to evaluate the fitness of an individual.
-    - cppn_model: The architecture of the CPPN.
-    - ind_size: The number of weights in the CPPN model.
-    
-    Returns:
-    - Initialized toolbox for genetic algorithm.
-    """
-    
+def create_cppn_toolbox(fitness, cppn_model, ind_size, network):    
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMax)
 
@@ -64,3 +50,30 @@ def create_cppn_toolbox(fitness, cppn_model, ind_size, network):
     toolbox.register("select", tools.selTournament, tournsize=3)
 
     return toolbox
+
+def create_pso_toolbox(fitness):
+    creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+    creator.create("Particle", list, fitness=creator.FitnessMax, speed=list, smin=None, smax=None, best=None)
+
+    toolbox = base.Toolbox()
+    toolbox.register("attr_float", random.uniform, 0, 1)
+    toolbox.register("particle", tools.initRepeat, creator.Particle, toolbox.attr_float, n=3*224*224)
+    toolbox.register("population", tools.initRepeat, list, toolbox.particle)
+
+    toolbox.register("evaluate", fitness)
+    toolbox.register("update", updateParticle, phi1=2.0, phi2=2.0)
+
+    return toolbox
+
+def updateParticle(part, best, phi1, phi2):
+    u1 = (random.uniform(0, phi1) for _ in part)
+    u2 = (random.uniform(0, phi2) for _ in part)
+    v_u1 = map(lambda x: x[0] * x[1], zip(u1, part.best - part))
+    v_u2 = map(lambda x: x[0] * x[1], zip(u2, best - part))
+    part.speed = list(map(lambda x: x[0] + x[1], zip(v_u1, v_u2)))
+    for i, speed in enumerate(part.speed):
+        if abs(speed) < part.smin:
+            part.speed[i] = part.smin
+        elif abs(speed) > part.smax:
+            part.speed[i] = part.smax
+    part[:] = list(map(lambda x: x[0] + x[1], zip(part, part.speed)))

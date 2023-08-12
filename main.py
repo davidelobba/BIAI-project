@@ -13,7 +13,7 @@ from inference import evaluate_resnet18
 
 from networks import Network
 from fitness import fitness
-from ga_init import create_ga_toolbox
+from project2.toolbox_init import create_ga_toolbox
 
 import wandb
 
