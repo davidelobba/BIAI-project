@@ -1,11 +1,8 @@
-/ga_output/*
-/data/*
-/cma_es_output/*
-/cppn_output/*
-/wandb/*
-/weights/*
-/__pycache__/*
-/pso_output/*
+data/
+wandb/
+weights/
+__pycache__/
 dataset.py
 inference.py
-main.py
+run_main.sh
+results/
