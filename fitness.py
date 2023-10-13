@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-from cppn import load_weights_into_cppn, generate_image
+from cppn_init import load_weights_into_cppn, generate_image
 
 from PIL import Image
 

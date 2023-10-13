@@ -15,11 +15,11 @@ def get_network_by_name(network_name):
     return networks.get(network_name, None)()
 
 class NetworkLoader:
-    def __init__(self, config_file="config.yaml"):
-        self.config = load_config(config_file)
+    def __init__(self, args):
+        self.args = args
 
     def load_network(self, weights_path, device):
-        network_name = self.config['network']
+        network_name = self.args.network
 
         network = get_network_by_name(network_name)
         if network is None:
