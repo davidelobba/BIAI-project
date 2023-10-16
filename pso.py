@@ -32,12 +32,10 @@ def run_pso(args, weights_path):
         test_model(network, criterion, dataloader['val'], device)
 
     if args.wandb:
-        wandb.init(project="BIAI_project", config={"algorithm": "PSO"}, name = config['network'])
+        wandb.init(project="BIAI_project", config={"algorithm": "PSO", "dataset": args.dataset}, name = config['network'])
 
-    # Create GA toolbox
-    toolbox = create_pso_toolbox(fitness)
+    toolbox = create_pso_toolbox(fitness, args.dataset)
 
-    # PSO parameters
     POP_SIZE, W, C1, C2, NGEN = config['pso']['population_size'], config['pso']['inertia'], config['pso']['cognitive_coefficient'], config['pso']['social_coefficient'], config['pso']['generations']
     gbest = None
 
@@ -62,15 +60,13 @@ def run_pso(args, weights_path):
                 particle.speed[i] = inertia + cognitive + social
                 particle[i] += particle.speed[i]
 
-            particle.fitness.values = toolbox.evaluate(particle, network)
+            particle.fitness.values = toolbox.evaluate(particle, network, args.dataset)
 
             if particle.fitness > particle.pbest.fitness:
                 particle.pbest = toolbox.clone(particle)
 
-        # Updating the gbest after all particles are evaluated
         gbest = max(particles, key=lambda x: x.fitness.values[0])
 
-        # Logging
         fits = [ind.fitness.values[0] for ind in particles]
         mean = sum(fits) / POP_SIZE
         std = abs(sum(x**2 for x in fits) / POP_SIZE - mean**2)**0.5
@@ -89,13 +85,15 @@ def run_pso(args, weights_path):
                 "Standard Deviation": std,
             })
 
-        label, confidence = get_classification_and_confidence(gbest, network)
+        label, confidence = get_classification_and_confidence(gbest, network, args.dataset)
 
-        # Save the best adversarial image of the generation
-        best_image = torch.tensor(np.array(gbest).reshape((3, 224, 224))).float()
+        if args.dataset == 'mnist':
+            best_image = torch.tensor(np.array(gbest).reshape((1, 224, 224))).float()
+        else:
+            best_image = torch.tensor(np.array(gbest).reshape((3, 224, 224))).float()
 
         if args.save:
-            directory = os.path.join(output_dir, args.network)
+            directory = os.path.join(output_dir, args.dataset, args.network)
             if not os.path.exists(directory):
                 os.makedirs(directory)
     
