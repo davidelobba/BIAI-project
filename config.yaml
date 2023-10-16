@@ -1,15 +1,13 @@
-dataset: cifar10
-
 ga:
-  population_size: 10
+  population_size: 1000
   crossover_probability: 0.5
   mutation_probability: 0.5
   generations: 10
 
 cma_es:
-  population_size: 10
+  population_size: 100
   generations: 10
-  sigma: 0.1
+  sigma: 0.5
   learning_rate: 0.1
 
 cppn:

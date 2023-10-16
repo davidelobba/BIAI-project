@@ -6,12 +6,18 @@ from torchvision import datasets, transforms
 from PIL import Image
 
 
+def upsample_numpy_image(image_np, target_size=(224, 224)):
+    image_pil = Image.fromarray((image_np * 255).astype(np.uint8).transpose(1, 2, 0))
+    image_pil_upsampled = image_pil.resize(target_size, Image.BILINEAR)
+    return np.array(image_pil_upsampled).transpose(2, 0, 1) / 255.0
 
-
-def get_classification_and_confidence(individual, model):
+def get_classification_and_confidence(individual, model, dataset):
     # Create the image from the individual
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    image = torch.tensor(np.array(individual).reshape((3, 224, 224))).float().unsqueeze(0).to(device)
+    if dataset == 'mnist':
+        image = torch.tensor(np.array(individual).reshape((1, 224, 224))).float().unsqueeze(0).to(device)
+    else:
+        image = torch.tensor(np.array(individual).reshape((3, 224, 224))).float().unsqueeze(0).to(device)
 
     with torch.no_grad():
         # Get the model's predictions
@@ -23,12 +29,14 @@ def get_classification_and_confidence(individual, model):
 
     return predicted.item(), confidence.item()
 
-def get_classification_and_confidence_cppn(individual, model):
+def get_classification_and_confidence_cppn(individual, model, dataset):
     # Create the image from the individual
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
     with torch.no_grad():
-        image = torch.tensor(np.array(individual).reshape((3, 224, 224))).float().unsqueeze(0).to(device)
+        if dataset == 'mnist':
+            image = torch.tensor(np.array(individual).reshape((1, 224, 224))).float().unsqueeze(0).to(device)
+        else:    
+            image = torch.tensor(np.array(individual).reshape((3, 224, 224))).float().unsqueeze(0).to(device)
         outputs = model(image)
         _, predicted = torch.max(outputs.data, 1)
         confidence = torch.nn.functional.softmax(outputs, dim=1)[0][predicted.item()]
@@ -94,7 +102,14 @@ def load_config(file_path="config.yaml"):
     with open(file_path, 'r') as f:
         return yaml.safe_load(f)
 
-def upsample_numpy_image(image_np, target_size=(224, 224)):
-    image_pil = Image.fromarray((image_np * 255).astype(np.uint8).transpose(1, 2, 0))
+def upsample_numpy_image(image_np, dataset, target_size=(224, 224)):
+    if dataset == 'mnist':
+        image_pil = Image.fromarray((image_np * 255).astype(np.uint8).squeeze())
+    else:
+        image_pil = Image.fromarray((image_np * 255).astype(np.uint8).transpose(1, 2, 0))
     image_pil_upsampled = image_pil.resize(target_size, Image.BILINEAR)
-    return np.array(image_pil_upsampled).transpose(2, 0, 1) / 255.0
+
+    if dataset == 'mnist':
+        return np.array(image_pil_upsampled) / 255.0
+    else:
+        return np.array(image_pil_upsampled).transpose(2, 0, 1) / 255.0
