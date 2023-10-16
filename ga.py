@@ -30,12 +30,10 @@ def run_ga(args, weights_path):
         test_model(network, criterion, dataloader['val'], device)
 
     if args.wandb:
-        wandb.init(project="BIAI_project", config={"algorithm": "Genetic Algorithm"}, name = config['network'])
+        wandb.init(project="BIAI_project", config={"algorithm": "Genetic Algorithm", "dataset": args.dataset}, name = config['network'])
 
-    # Create GA toolbox
-    toolbox = create_ga_toolbox(fitness)
+    toolbox = create_ga_toolbox(fitness, args.dataset)
 
-    # Evolutionary algorithm parameters
     POP_SIZE, CXPB, MUTPB, NGEN = config['ga']['population_size'], config['ga']['crossover_probability'], config['ga']['mutation_probability'], config['ga']['generations']
     
     pop = toolbox.population(n=POP_SIZE)
@@ -63,8 +61,7 @@ def run_ga(args, weights_path):
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         for ind in tqdm(invalid_ind, desc="Evaluating individuals", leave=False):
-            #ind.fitness.values = toolbox.evaluate(ind, network.network)
-            ind.fitness.values = toolbox.evaluate(ind, network)
+            ind.fitness.values = toolbox.evaluate(ind, network, args.dataset)
 
         print("Evaluated %i individuals" % len(invalid_ind))
 
@@ -95,13 +92,15 @@ def run_ga(args, weights_path):
         best_ind = tools.selBest(pop, 1)[0]
 
         # Get the classification label and confidence
-        label, confidence = get_classification_and_confidence(best_ind, network)
+        label, confidence = get_classification_and_confidence(best_ind, network, args.dataset)
 
-        # Create the image from the best individual
-        best_image = torch.tensor(np.array(best_ind).reshape((3, 224, 224))).float()
+        if args.dataset == 'mnist':
+            best_image = torch.tensor(np.array(best_ind).reshape((1, 224, 224))).float()
+        else:
+            best_image = torch.tensor(np.array(best_ind).reshape((3, 224, 224))).float()
 
         if args.save:
-            directory = os.path.join(output_dir, args.network)
+            directory = os.path.join(output_dir, args.dataset, args.network)
             if not os.path.exists(directory):
                 os.makedirs(directory)
     
