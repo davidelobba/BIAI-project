@@ -49,16 +49,18 @@ def load_weights_into_cppn(cppn, individual):
             idx += num_params
 
 def generate_image(cppn, dataset, width=224, height=224):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    cppn = cppn.to(device)
     if dataset == 'mnist':
-        image = torch.zeros(1, width, height)
+        image = torch.zeros(1, width, height).to(device)
         for x in range(width):
             for y in range(height):
-                coord = torch.tensor([x / width, y / height]).float()
+                coord = torch.tensor([x / width, y / height]).float().to(device)
                 image[:, x, y] = cppn(coord)
     else:
-        image = torch.zeros(3, width, height)
+        image = torch.zeros(3, width, height).to(device)
         for x in range(width):
             for y in range(height):
-                coord = torch.tensor([x / width, y / height]).float()
+                coord = torch.tensor([x / width, y / height]).float().to(device)
                 image[:, x, y] = cppn(coord)
     return image

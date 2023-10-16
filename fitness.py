@@ -58,20 +58,19 @@ def fitness_cppn(individual, cppn, model, dataset):
     cppn = cppn.to(device)
     model = model.to(device)
 
-
     load_weights_into_cppn(cppn, individual)
     image = generate_image(cppn, dataset).to(device)
 
-
     with torch.no_grad():
         if dataset == 'mnist':
-            image = torch.tensor(np.array(image).reshape((1, 224, 224))).float().unsqueeze(0).to(device)
+            image_np = image.cpu().numpy().reshape((1, 224, 224))
+            image = torch.tensor(image_np).float().unsqueeze(0).to(device)
         else:    
-            image = torch.tensor(np.array(image).reshape((3, 224, 224))).float().unsqueeze(0).to(device)
+            image_np = image.cpu().numpy().reshape((3, 224, 224))
+            image = torch.tensor(image_np).float().unsqueeze(0).to(device)
         outputs = model(image).to(device)
         _, predicted = torch.max(outputs.data, 1)
         confidence = torch.nn.functional.softmax(outputs, dim=1)[0][predicted.item()]
-
 
     return (confidence,)
 
@@ -90,4 +89,4 @@ def fitness_pso(particle, model, dataset):
 
     return (confidence,)
 
-################################## Sistemare ##################################
+################################## Sistemare CPPN BOTTLENECK ##################################
