@@ -31,11 +31,11 @@ def run_cppn(args, weights_path):
         test_model(network, criterion, dataloader['val'], device)
 
     if args.wandb:
-        wandb.init(project="BIAI_project", config={"algorithm": "CPPN"}, name = config['network'])
+        wandb.init(project="BIAI_project", config={"algorithm": "CPPN", "dataset": args.dataset}, name = config['network'])
 
-    cppn_model = CPPN()
+    cppn_model = CPPN(args.dataset)
     ind_size = sum(p.numel() for p in cppn_model.parameters())
-    toolbox = create_cppn_toolbox(fitness_cppn, cppn_model, ind_size, network)
+    toolbox = create_cppn_toolbox(fitness_cppn, cppn_model, ind_size, network, args.dataset)
 
     POP_SIZE, CXPB, MUTPB, NGEN = config['cppn']['population_size'], config['cppn']['crossover_probability'], config['cppn']['mutation_probability'], config['cppn']['generations']
     
@@ -64,7 +64,7 @@ def run_cppn(args, weights_path):
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         for ind in tqdm(invalid_ind, desc="Evaluating individuals", leave=False):
-            ind.fitness.values = toolbox.evaluate(ind)
+            ind.fitness.values = toolbox.evaluate(ind, cppn_model, network, args.dataset)
 
 
         print("Evaluated %i individuals" % len(invalid_ind))
@@ -92,20 +92,18 @@ def run_cppn(args, weights_path):
                 "Standard Deviation": std,
             })
 
-        # Determine the best individual of the current generation
         best_ind = tools.selBest(pop, 1)[0]
 
         # Load the weights from the best individual into the CPPN
         load_weights_into_cppn(cppn_model, best_ind)
 
         # Generate the image using the CPPN
-        best_image = generate_image(cppn_model)
+        best_image = generate_image(cppn_model, args.dataset)
 
-        # Get the classification label and confidence for the generated image
-        label, confidence = get_classification_and_confidence_cppn(best_image, network)
+        label, confidence = get_classification_and_confidence_cppn(best_image, network, args.dataset)
 
         if args.save:
-            directory = os.path.join(output_dir, args.network)
+            directory = os.path.join(output_dir, args.dataset, args.network)
             if not os.path.exists(directory):
                 os.makedirs(directory)
     
