@@ -9,8 +9,9 @@ def main():
     parser = argparse.ArgumentParser(description='Run evolutionary algorithms.')
     parser.add_argument('--algorithm', type=str, choices=['ga', 'pso', 'cma_es', 'cppn'], default='ga', help='Algorithm to run')
     parser.add_argument('--config-path', type=str, required=True, help='Path to configuration file')
-    parser.add_argument('--weights-path', type=str, required=True, help='Path to weights file')
+    parser.add_argument('--weights-path', type=str, default=None, help='Path to weights file')
     parser.add_argument('--network', type=str, choices=['resnet18', 'resnet34', 'resnet50'], default='resnet18', help='Name of the network')
+    parser.add_argument('--dataset', type=str, choices=['cifar10', 'imagenet', 'mnist'], default='cifar10', help='Name of the dataset')
     parser.add_argument('--output-dir', type=str, required=True, help='Path to save the best individual')
     parser.add_argument('--test-model', dest='test', action='store_true', help='Test the model before running the algorithm')
     parser.add_argument('--no-test-model', dest='test', action='store_false', help='Do not test the model before running the algorithm')
@@ -23,7 +24,12 @@ def main():
     parser.set_defaults(save=True)
     
     args = parser.parse_args()
-    weights_path = os.path.join(args.weights_path, f'{args.network}_best_model.pth')
+    if args.dataset != 'imagenet':
+        weights_path = os.path.join(args.weights_path, f'{args.dataset}', f'{args.network}_best_model.pth')
+    else:
+        weights_path = args.weights_path
+
+    print(f"Running {args.algorithm} on {args.dataset} with {args.network} network, weights from {weights_path}")
 
     if args.algorithm == 'ga':
         args.output_dir = os.path.join(args.output_dir, 'ga')
