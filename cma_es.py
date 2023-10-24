@@ -33,28 +33,24 @@ def run_cma_es(args, weights_path):
     if args.wandb:
         wandb.init(project="BIAI_project", config={"algorithm": "CMA-ES", "dataset": args.dataset}, name = config['network'])
 
-    toolbox = create_cma_es_toolbox(fitness, args.dataset, sigma=config['cma_es']['sigma'], population_size=config['cma_es']['population_size'])
+    SIGMA, POP_SIZE, NGEN = config['cma_es']['sigma'], config['cma_es']['population_size'], config['cma_es']['generations']
+    toolbox = create_cma_es_toolbox(fitness, args.dataset, sigma=SIGMA, population_size=POP_SIZE)
 
-    population = toolbox.generate()
+    pop = toolbox.generate()
 
-    invalid_ind = [ind for ind in population if not ind.fitness.valid]
+    invalid_ind = [ind for ind in pop if not ind.fitness.valid]
 
     for ind in tqdm(invalid_ind, desc="Evaluating initial population", leave=False):
         ind.fitness.values = toolbox.evaluate(ind, network, args.dataset)
 
-    ngen = config['cma_es']['generations']
-
-    for g in range(ngen):
-        # Generate a new population
+    for g in range(NGEN):
         offspring = toolbox.generate()
         
-        # Evaluate the individuals with an invalid fitness
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         for ind in tqdm(invalid_ind, desc=f"Evaluating generation {g}", leave=False):
             ind.fitness.values = toolbox.evaluate(ind, network, args.dataset)
 
-        # Update the strategy with the evaluated individuals
         toolbox.update(offspring)
 
         print("Evaluated %i individuals" % len(invalid_ind))
@@ -80,7 +76,6 @@ def run_cma_es(args, weights_path):
                 "Standard Deviation": std,
             })
 
-        # Determine the best individual of the current generation
         best_ind = tools.selBest(offspring, 1)[0]
 
         if args.dataset == 'mnist':
@@ -88,10 +83,8 @@ def run_cma_es(args, weights_path):
         else:
             best_ind_upsampled = upsample_numpy_image(np.array(best_ind).reshape((3, 32, 32)), dataset=args.dataset)
 
-        # Get the classification label and confidence
         label, confidence = get_classification_and_confidence(best_ind_upsampled, network, dataset=args.dataset)
 
-        # Create the image from the best individual
         if args.dataset == 'mnist':
             best_image = torch.tensor(best_ind_upsampled.reshape((1, 224, 224))).float()
         else:
