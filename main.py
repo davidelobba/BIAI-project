@@ -21,7 +21,8 @@ def main():
     parser.set_defaults(wandb=False)
     parser.add_argument('--save', dest='save', action='store_true', help='Save the best individual')
     parser.add_argument('--no-save', dest='save', action='store_false', help='Do not save the best individual')
-    parser.set_defaults(save=True)
+    parser.set_defaults(save=False)
+    parser.add_argument('--adaptive-mutation-crossover', dest='adaptive_mutation_crossover', action='store_true', help='Use adaptive mutation and crossover')
     
     args = parser.parse_args()
     if args.dataset != 'imagenet':

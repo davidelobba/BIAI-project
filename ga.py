@@ -19,6 +19,7 @@ import wandb
 def run_ga(args, weights_path):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     output_dir = args.output_dir
+    print(args)
 
     config = load_config(args.config_path)
     loader = NetworkLoader(args)
@@ -35,8 +36,19 @@ def run_ga(args, weights_path):
     toolbox = create_ga_toolbox(fitness, args.dataset)
 
     POP_SIZE, CXPB, MUTPB, NGEN = config['ga']['population_size'], config['ga']['crossover_probability'], config['ga']['mutation_probability'], config['ga']['generations']
-    
+
+    if args.adaptive_mutation_crossover:
+        STAGNATION_LIMIT = config['ga']['stagnation']
+        MAX_MUTPB, MIN_MUTPB, MUTPB_DELTA = config['ga']['max_mutpb'], config['ga']['min_mutpb'], config['ga']['mutpb_delta']
+        MAX_CXPB, MIN_CXPB, CXPB_DELTA = config['ga']['max_cxpb'], config['ga']['min_cxpb'], config['ga']['cxpb_delta']
+        best_fitnesses = [float('-inf')] * STAGNATION_LIMIT
+  
     pop = toolbox.population(n=POP_SIZE)
+
+    invalid_ind = [ind for ind in pop if not ind.fitness.valid]
+
+    for ind in tqdm(invalid_ind, desc="Evaluating initial population", leave=False):
+        ind.fitness.values = toolbox.evaluate(ind, network, args.dataset)
 
     print("Starting evolution")
 
@@ -68,6 +80,25 @@ def run_ga(args, weights_path):
         pop[:] = offspring
 
         fits = [ind.fitness.values[0] for ind in pop]
+        avg_fit = sum(fits) / len(fits)
+
+        if args.adaptive_mutation_crossover:
+            best_fitness_current_gen = max(fits)
+
+            generation_factor = g / NGEN
+            MUTPB = MAX_MUTPB - (MAX_MUTPB - MIN_MUTPB) * generation_factor
+            CXPB = MIN_CXPB + (MAX_CXPB - MIN_CXPB) * generation_factor
+
+            if best_fitness_current_gen <= min(best_fitnesses):
+                MUTPB = min(MAX_MUTPB, MUTPB + MUTPB_DELTA)
+                CXPB = max(MIN_CXPB, CXPB - CXPB_DELTA)
+            else:
+                MUTPB = max(MIN_MUTPB, MUTPB - MUTPB_DELTA)
+                CXPB = min(MAX_CXPB, CXPB + CXPB_DELTA)
+
+            best_fitnesses.pop(0)
+            best_fitnesses.append(best_fitness_current_gen)
+            print(f"Adaptive mutation and crossover probabilities: {MUTPB}, {CXPB}")
 
         length = len(pop)
         mean = sum(fits) / length
