@@ -3,15 +3,14 @@ import random
 import numpy as np
 import torch
 from tqdm import tqdm
-import yaml
 import torchvision
 from deap import tools
 import torch.nn as nn
 
 from networks import NetworkLoader
-from utils import load_config, get_classification_and_confidence, test_model, dataset_loader
+from utils import load_config, get_classification_and_confidence, test_model, dataset_loader, get_tranform
 
-from fitness import fitness
+from fitness import fitness_ga as fitness
 from toolbox_init import create_ga_toolbox
 
 import wandb
@@ -19,7 +18,8 @@ import wandb
 def run_ga(args, weights_path):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     output_dir = args.output_dir
-    print(args)
+    
+    transform = get_tranform()
 
     config = load_config(args.config_path)
     loader = NetworkLoader(args)
@@ -45,11 +45,6 @@ def run_ga(args, weights_path):
   
     pop = toolbox.population(n=POP_SIZE)
 
-    invalid_ind = [ind for ind in pop if not ind.fitness.valid]
-
-    for ind in tqdm(invalid_ind, desc="Evaluating initial population", leave=False):
-        ind.fitness.values = toolbox.evaluate(ind, network, args.dataset)
-
     print("Starting evolution")
 
     for g in range(NGEN):
@@ -73,7 +68,7 @@ def run_ga(args, weights_path):
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         for ind in tqdm(invalid_ind, desc="Evaluating individuals", leave=False):
-            ind.fitness.values = toolbox.evaluate(ind, network, args.dataset)
+            ind.fitness.values = toolbox.evaluate(ind, network, args.dataset, transform)
 
         print("Evaluated %i individuals" % len(invalid_ind))
 
@@ -123,7 +118,7 @@ def run_ga(args, weights_path):
         best_ind = tools.selBest(pop, 1)[0]
 
         # Get the classification label and confidence
-        label, confidence = get_classification_and_confidence(best_ind, network, args.dataset)
+        label, confidence = get_classification_and_confidence(best_ind, network, args.dataset, transform)
 
         if args.dataset == 'mnist':
             best_image = torch.tensor(np.array(best_ind).reshape((1, 224, 224))).float()

@@ -11,32 +11,31 @@ def upsample_numpy_image(image_np, target_size=(224, 224)):
     image_pil_upsampled = image_pil.resize(target_size, Image.BILINEAR)
     return np.array(image_pil_upsampled).transpose(2, 0, 1) / 255.0
 
-def get_classification_and_confidence(individual, model, dataset):
-    # Create the image from the individual
+def get_classification_and_confidence(individual, model, dataset, transform=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    
     if dataset == 'mnist':
-        image = torch.tensor(np.array(individual).reshape((1, 224, 224))).float().unsqueeze(0).to(device)
+        image = torch.reshape(torch.tensor(individual), (1, 1, 224, 224)).to(device)
+        image = transform['mnist'](image)
     else:
-        image = torch.tensor(np.array(individual).reshape((3, 224, 224))).float().unsqueeze(0).to(device)
+        image = torch.reshape(torch.tensor(individual), (1, 3, 224, 224)).to(device)
+        image = transform['default'](image)
 
     with torch.no_grad():
-        # Get the model's predictions
         outputs = model(image)
         _, predicted = torch.max(outputs.data, 1)
-        
-        # Calculate the confidence of the prediction
         confidence = torch.nn.functional.softmax(outputs, dim=1)[0][predicted.item()]
 
     return predicted.item(), confidence.item()
 
 def get_classification_and_confidence_cppn(individual, model, dataset):
-    # Create the image from the individual
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
     with torch.no_grad():
         if dataset == 'mnist':
-            image = torch.tensor(np.array(individual).reshape((1, 224, 224))).float().unsqueeze(0).to(device)
-        else:    
-            image = torch.tensor(np.array(individual).reshape((3, 224, 224))).float().unsqueeze(0).to(device)
+            image = torch.reshape(individual, (1, 1, 224, 224))
+        else:
+            image = torch.reshape(individual, (1, 3, 224, 224))
         outputs = model(image)
         _, predicted = torch.max(outputs.data, 1)
         confidence = torch.nn.functional.softmax(outputs, dim=1)[0][predicted.item()]
@@ -113,3 +112,14 @@ def upsample_numpy_image(image_np, dataset, target_size=(224, 224)):
         return np.array(image_pil_upsampled) / 255.0
     else:
         return np.array(image_pil_upsampled).transpose(2, 0, 1) / 255.0
+
+def get_tranform():
+    transform = {
+        'mnist': transforms.Compose([
+            transforms.Normalize((0.5,), (0.5,))
+        ]),
+        'default': transforms.Compose([
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+    }
+    return transform

@@ -1,5 +1,6 @@
 from deap import base, creator, tools, cma
 import random
+import numpy as np
 
 
 def create_ga_toolbox(fitness, dataset):
@@ -8,6 +9,7 @@ def create_ga_toolbox(fitness, dataset):
 
     toolbox = base.Toolbox()
     toolbox.register("attr_float", random.uniform, 0, 1)
+    #toolbox.register("attr_float", random.gauss, 0.5, 0.1)
 
     if dataset == 'mnist':
         toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=1*224*224)
@@ -71,19 +73,5 @@ def create_pso_toolbox(fitness, dataset):
     toolbox.register("population", tools.initRepeat, list, toolbox.particle)
 
     toolbox.register("evaluate", fitness)
-    toolbox.register("update", updateParticle, phi1=2.0, phi2=2.0)
 
     return toolbox
-
-def updateParticle(part, best, phi1, phi2):
-    u1 = (random.uniform(0, phi1) for _ in part)
-    u2 = (random.uniform(0, phi2) for _ in part)
-    v_u1 = map(lambda x: x[0] * x[1], zip(u1, part.best - part))
-    v_u2 = map(lambda x: x[0] * x[1], zip(u2, best - part))
-    part.speed = list(map(lambda x: x[0] + x[1], zip(v_u1, v_u2)))
-    for i, speed in enumerate(part.speed):
-        if abs(speed) < part.smin:
-            part.speed[i] = part.smin
-        elif abs(speed) > part.smax:
-            part.speed[i] = part.smax
-    part[:] = list(map(lambda x: x[0] + x[1], zip(part, part.speed)))

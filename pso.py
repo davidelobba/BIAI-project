@@ -37,13 +37,13 @@ def run_pso(args, weights_path):
     toolbox = create_pso_toolbox(fitness, args.dataset)
 
     POP_SIZE, W, C1, C2, NGEN = config['pso']['population_size'], config['pso']['inertia'], config['pso']['cognitive_coefficient'], config['pso']['social_coefficient'], config['pso']['generations']
-    gbest = None
 
     particles = toolbox.population(n=POP_SIZE)
 
     for particle in particles:
-        particle.speed = [random.uniform(-1, 1) for _ in range(len(particle))]
+        particle.speed = [random.uniform(0, 1) for _ in range(len(particle))]
         particle.pbest = toolbox.clone(particle)
+    gbest = None
 
     print("Starting evolution")
 
@@ -88,9 +88,9 @@ def run_pso(args, weights_path):
         label, confidence = get_classification_and_confidence(gbest, network, args.dataset)
 
         if args.dataset == 'mnist':
-            best_image = torch.tensor(np.array(gbest).reshape((1, 224, 224))).float()
+            best_image = torch.reshape(torch.tensor(gbest), (1, 1, 224, 224))
         else:
-            best_image = torch.tensor(np.array(gbest).reshape((3, 224, 224))).float()
+            best_image = torch.reshape(torch.tensor(gbest), (1, 3, 224, 224))
 
         if args.save:
             directory = os.path.join(output_dir, args.dataset, args.network)
@@ -109,3 +109,4 @@ def run_pso(args, weights_path):
         print(f"Best image of generation {g} has label {label} and confidence {confidence:.4f}")
 
     print("-- End of successful evolution --")
+    
