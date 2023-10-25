@@ -9,7 +9,7 @@ from deap import tools
 import torch.nn as nn
 
 from networks import NetworkLoader
-from utils import load_config, get_classification_and_confidence, test_model, dataset_loader, upsample_numpy_image
+from utils import load_config, get_classification_and_confidence, test_model, dataset_loader, upsample_numpy_image, get_transform
 
 from fitness import fitness_cma_es as fitness
 from toolbox_init import create_cma_es_toolbox
@@ -20,6 +20,11 @@ import wandb
 def run_cma_es(args, weights_path):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     output_dir = args.output_dir
+
+    if args.normalize:
+        transform = get_transform()
+    else:
+        transform = None
 
     config = load_config(args.config_path)
     loader = NetworkLoader(args)
@@ -41,7 +46,7 @@ def run_cma_es(args, weights_path):
     invalid_ind = [ind for ind in pop if not ind.fitness.valid]
 
     for ind in tqdm(invalid_ind, desc="Evaluating initial population", leave=False):
-        ind.fitness.values = toolbox.evaluate(ind, network, args.dataset)
+        ind.fitness.values = toolbox.evaluate(ind, network, args.dataset, transform)
 
     for g in range(NGEN):
         offspring = toolbox.generate()
@@ -49,7 +54,7 @@ def run_cma_es(args, weights_path):
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         for ind in tqdm(invalid_ind, desc=f"Evaluating generation {g}", leave=False):
-            ind.fitness.values = toolbox.evaluate(ind, network, args.dataset)
+            ind.fitness.values = toolbox.evaluate(ind, network, args.dataset, transform)
 
         toolbox.update(offspring)
 
@@ -83,7 +88,7 @@ def run_cma_es(args, weights_path):
         else:
             best_ind_upsampled = upsample_numpy_image(np.array(best_ind).reshape((3, 32, 32)), dataset=args.dataset)
 
-        label, confidence = get_classification_and_confidence(best_ind_upsampled, network, dataset=args.dataset)
+        label, confidence = get_classification_and_confidence(best_ind_upsampled, network, dataset=args.dataset, transform=transform)
 
         if args.dataset == 'mnist':
             best_image = torch.tensor(best_ind_upsampled.reshape((1, 224, 224))).float()

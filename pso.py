@@ -11,7 +11,7 @@ import torch.nn as nn
 
 from networks import NetworkLoader
 
-from utils import load_config, get_classification_and_confidence, test_model, dataset_loader
+from utils import load_config, get_classification_and_confidence, test_model, dataset_loader, get_transform
 from fitness import fitness_pso as fitness
 from toolbox_init import create_pso_toolbox
 
@@ -21,6 +21,11 @@ import wandb
 def run_pso(args, weights_path):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     output_dir = args.output_dir
+
+    if args.normalize:
+        transform = get_transform()
+    else:
+        transform = None
 
     config = load_config(args.config_path)
     loader = NetworkLoader(args)
@@ -60,7 +65,7 @@ def run_pso(args, weights_path):
                 particle.speed[i] = inertia + cognitive + social
                 particle[i] += particle.speed[i]
 
-            particle.fitness.values = toolbox.evaluate(particle, network, args.dataset)
+            particle.fitness.values = toolbox.evaluate(particle, network, args.dataset, transform)
 
             if particle.fitness > particle.pbest.fitness:
                 particle.pbest = toolbox.clone(particle)
@@ -85,7 +90,7 @@ def run_pso(args, weights_path):
                 "Standard Deviation": std,
             })
 
-        label, confidence = get_classification_and_confidence(gbest, network, args.dataset)
+        label, confidence = get_classification_and_confidence(gbest, network, args.dataset, transform)
 
         if args.dataset == 'mnist':
             best_image = torch.reshape(torch.tensor(gbest), (1, 1, 224, 224))

@@ -8,7 +8,7 @@ from deap import tools
 import torch.nn as nn
 
 from networks import NetworkLoader
-from utils import load_config, get_classification_and_confidence, test_model, dataset_loader, get_tranform
+from utils import load_config, get_classification_and_confidence, test_model, dataset_loader, get_transform
 
 from fitness import fitness_ga as fitness
 from toolbox_init import create_ga_toolbox
@@ -19,7 +19,10 @@ def run_ga(args, weights_path):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     output_dir = args.output_dir
     
-    transform = get_tranform()
+    if args.normalize:
+        transform = get_transform()
+    else:
+        transform = None
 
     config = load_config(args.config_path)
     loader = NetworkLoader(args)

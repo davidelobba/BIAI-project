@@ -11,10 +11,11 @@ def fitness_ga(individual, model, dataset, transform=None):
 
     if dataset == 'mnist':
         image = torch.reshape(torch.tensor(individual), (1, 1, 224, 224)).to(device)
-        image = transform['mnist'](image)
     else:
         image = torch.reshape(torch.tensor(individual), (1, 3, 224, 224)).to(device)
-        image = transform['default'](image)
+
+    if transform is not None:
+        image = transform[dataset](image)
 
     with torch.no_grad():
         outputs = model(image)
@@ -23,17 +24,20 @@ def fitness_ga(individual, model, dataset, transform=None):
 
     return (confidence,)
 
-def fitness_cma_es(individual, model, dataset):
+def fitness_cma_es(individual, model, dataset, transform=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     if dataset == 'mnist':
-        individual_upsampled = upsample_numpy_image(np.array(individual).reshape((1, 32, 32)), dataset)
+        image = upsample_numpy_image(np.array(individual).reshape((1, 32, 32)), dataset)
     else:
-        individual_upsampled = upsample_numpy_image(np.array(individual).reshape((3, 32, 32)), dataset)
+        image = upsample_numpy_image(np.array(individual).reshape((3, 32, 32)), dataset)
 
-    image = torch.tensor(individual_upsampled).float().unsqueeze(0).to(device)
+    image = torch.tensor(image).float().unsqueeze(0).to(device)
     if dataset == 'mnist':
         image = image.unsqueeze(0)
+
+    if transform is not None:
+        image = transform[dataset](image)
 
     with torch.no_grad():
         outputs = model(image).to(device)
@@ -42,7 +46,7 @@ def fitness_cma_es(individual, model, dataset):
 
     return (confidence,)
 
-def fitness_cppn(individual, cppn, model, dataset):
+def fitness_cppn(individual, cppn, model, dataset, transform=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     cppn = cppn.to(device)
     model = model.to(device)
@@ -56,19 +60,25 @@ def fitness_cppn(individual, cppn, model, dataset):
         else:
             image = torch.reshape(image, (1, 3, 224, 224))
 
+        if transform is not None:
+            image = transform[dataset](image)
+
         outputs = model(image).to(device)
         _, predicted = torch.max(outputs.data, 1)
         confidence = torch.nn.functional.softmax(outputs, dim=1)[0][predicted.item()]
 
     return (confidence,)
 
-def fitness_pso(particle, model, dataset):
+def fitness_pso(particle, model, dataset, transform=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     if dataset == 'mnist':
         image = torch.reshape(torch.tensor(particle), (1, 1, 224, 224)).to(device)
     else:
         image = torch.reshape(torch.tensor(particle), (1, 3, 224, 224)).to(device)
+
+    if transform is not None:
+        image = transform[dataset](image)
 
     with torch.no_grad():
         outputs = model(image).to(device)

@@ -23,6 +23,7 @@ def main():
     parser.add_argument('--no-save', dest='save', action='store_false', help='Do not save the best individual')
     parser.set_defaults(save=False)
     parser.add_argument('--adaptive-mutation-crossover', dest='adaptive_mutation_crossover', action='store_true', help='Use adaptive mutation and crossover')
+    parser.add_argument('--normalize', dest='normalize', action='store_true', help='Use normalization')
     
     args = parser.parse_args()
     if args.dataset != 'imagenet':
