@@ -1,43 +1,68 @@
-import torch.nn as nn
+import numpy as np
 import torch
+import torch.nn as nn
+
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Linear') != -1:
+        m.weight.data.normal_(0.0, 1.0)
+        if m.bias is not None:
+            m.bias.data.fill_(0)
 
 
-class Sine(nn.Module):
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, x):
-        return torch.sin(x)
-    
 class CPPN(nn.Module):
-    def __init__(self, dataset):
+    def __init__(self, dim_z, dim_c, ch):
         super(CPPN, self).__init__()
-        self.dataset = dataset
-        
-        self.cppn = nn.Sequential(
-            nn.Linear(2, 20),
-            Sine(),
-            nn.Linear(20, 20),
-            Sine(),
-            nn.Linear(20, 3),
+        dim_z = dim_z
+        dim_c = dim_c
+        ch = ch
+
+        self.l_z = nn.Linear(dim_z, ch)
+        self.l_x = nn.Linear(1, ch, bias=False)
+        self.l_y = nn.Linear(1, ch, bias=False)
+        self.l_r = nn.Linear(1, ch, bias=False)
+
+        self.ln_seq = nn.Sequential(
+            nn.Tanh(),
+
+            nn.Linear(ch, ch),
+            nn.Tanh(),
+
+            nn.Linear(ch, ch),
+            nn.Tanh(),
+
+            nn.Linear(ch, ch),
+            nn.Tanh(),
+
+            nn.Linear(ch, dim_c),
             nn.Sigmoid()
-        )
-        self.cppn_mnist = nn.Sequential(
-            nn.Linear(2, 20),
-            Sine(),
-            nn.Linear(20, 20),
-            Sine(),
-            nn.Linear(20, 1),
-            nn.Sigmoid()
-        )
+            )
+
+        self._initialize()
+
+    def _initialize(self):
+        self.apply(weights_init)
+
+    def forward(self, z, x, y, r):
+        u = self.l_z(z) + self.l_x(x) + self.l_y(y) + self.l_r(r)
+        out = self.ln_seq(u)
+        return out
 
 
-        
-    def forward(self, x):
-        if self.dataset == 'mnist':
-            return self.cppn_mnist(x)
-        else:
-            return self.cppn(x)
+def get_coordinates(dim_x, dim_y, scale=1.0, batch_size=1):
+    '''
+    calculates and returns a vector of x and y coordintes, and corresponding radius from the centre of image.
+    '''
+    n_points = dim_x * dim_y
+    x_range = scale * (np.arange(dim_x) - (dim_x - 1) / 2.0) / (dim_x - 1) / 0.5
+    y_range = scale * (np.arange(dim_y) - (dim_y - 1) / 2.0) / (dim_y - 1) / 0.5
+    x_mat = np.matmul(np.ones((dim_y, 1)), x_range.reshape((1, dim_x)))
+    y_mat = np.matmul(y_range.reshape((dim_y, 1)), np.ones((1, dim_x)))
+    r_mat = np.sqrt(x_mat * x_mat + y_mat * y_mat)
+    x_mat = np.tile(x_mat.flatten(), batch_size).reshape(batch_size, n_points, 1)
+    y_mat = np.tile(y_mat.flatten(), batch_size).reshape(batch_size, n_points, 1)
+    r_mat = np.tile(r_mat.flatten(), batch_size).reshape(batch_size, n_points, 1)
+    return torch.from_numpy(x_mat).float(), torch.from_numpy(y_mat).float(), torch.from_numpy(r_mat).float()
 
 
 def load_weights_into_cppn(cppn, individual):
@@ -47,20 +72,4 @@ def load_weights_into_cppn(cppn, individual):
             num_params = param.numel()
             param.copy_(torch.tensor(individual[idx:idx+num_params]).view_as(param))
             idx += num_params
-
-def generate_image(cppn, dataset, width=224, height=224):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    cppn = cppn.to(device)
-    if dataset == 'mnist':
-        image = torch.zeros(1, width, height).to(device)
-        for x in range(width):
-            for y in range(height):
-                coord = torch.tensor([x / width, y / height]).float().to(device)
-                image[:, x, y] = cppn(coord)
-    else:
-        image = torch.zeros(3, width, height).to(device)
-        for x in range(width):
-            for y in range(height):
-                coord = torch.tensor([x / width, y / height]).float().to(device)
-                image[:, x, y] = cppn(coord)
-    return image
+    return cppn

@@ -3,13 +3,13 @@ import random
 import numpy as np
 import torch
 from tqdm import tqdm
-import yaml
 import torch.nn as nn
 from networks import NetworkLoader
 from deap import tools
 import torchvision
-from cppn_init import CPPN, load_weights_into_cppn, generate_image
-from utils import load_config, get_classification_and_confidence_cppn, test_model, dataset_loader
+
+from cppn_init import CPPN, load_weights_into_cppn, get_coordinates
+from utils import load_config, get_classification_and_confidence_cppn, test_model, dataset_loader, get_transform
 
 from fitness import fitness_cppn
 from toolbox_init import create_cppn_toolbox
@@ -17,9 +17,13 @@ import wandb
 
 
 def run_cppn(args, weights_path):
-
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     output_dir = args.output_dir
+
+    if args.normalize:
+        transform = get_transform()
+    else:
+        transform = None
 
     config = load_config(args.config_path)
     loader = NetworkLoader(args)
@@ -33,13 +37,28 @@ def run_cppn(args, weights_path):
     if args.wandb:
         wandb.init(project="BIAI_project", config={"algorithm": "CPPN", "dataset": args.dataset}, name = config['network'])
 
-    cppn_model = CPPN(args.dataset)
+    dim_z, ch = config['cppn']['dim_z'], config['cppn']['ch']
+    dim_y, dim_x, scale = config['cppn']['dim_y'], config['cppn']['dim_x'], config['cppn']['scale']
+
+    if args.dataset == 'mnist':
+        dim_c = 1
+    else:
+        dim_c = 3
+
+    cppn_model = CPPN(dim_z, dim_c, ch).to(device)
     ind_size = sum(p.numel() for p in cppn_model.parameters())
-    toolbox = create_cppn_toolbox(fitness_cppn, cppn_model, ind_size, network, args.dataset)
+    toolbox = create_cppn_toolbox(fitness_cppn, ind_size)
 
     POP_SIZE, CXPB, MUTPB, NGEN = config['cppn']['population_size'], config['cppn']['crossover_probability'], config['cppn']['mutation_probability'], config['cppn']['generations']
     
     pop = toolbox.population(n=POP_SIZE)
+
+    x, y, r = get_coordinates(dim_x, dim_y, scale)
+    x, y, r = x.to(device), y.to(device), r.to(device)
+
+    z = torch.randn(1, dim_z).to(device)
+    scale = torch.ones((dim_x * dim_y, 1)).to(device)
+    z_scaled = torch.matmul(scale, z)
 
     print("Starting evolution")
 
@@ -64,8 +83,7 @@ def run_cppn(args, weights_path):
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         for ind in tqdm(invalid_ind, desc="Evaluating individuals", leave=False):
-            ind.fitness.values = toolbox.evaluate(ind, cppn_model, network, args.dataset)
-
+            ind.fitness.values = toolbox.evaluate(ind, cppn_model, network, args.dataset, z_scaled, x, y, r, transform)
 
         print("Evaluated %i individuals" % len(invalid_ind))
 
@@ -93,14 +111,19 @@ def run_cppn(args, weights_path):
             })
 
         best_ind = tools.selBest(pop, 1)[0]
+        cppn_model = load_weights_into_cppn(cppn_model, best_ind)
 
-        # Load the weights from the best individual into the CPPN
-        load_weights_into_cppn(cppn_model, best_ind)
+        with torch.no_grad():
+            if args.dataset == 'mnist':
+                best_image = cppn_model(z_scaled, x, y, r)
+                best_image = best_image.view(-1, 224, 224, 1).cpu()
+                best_image = best_image.permute((0, 3, 1, 2))
+            else:
+                best_image = cppn_model(z_scaled, x, y, r)
+                best_image = best_image.view(-1, 224, 224, 3).cpu()
+                best_image = best_image.permute((0, 3, 1, 2))
 
-        # Generate the image using the CPPN
-        best_image = generate_image(cppn_model, args.dataset)
-
-        label, confidence = get_classification_and_confidence_cppn(best_image, network, args.dataset)
+            label, confidence = get_classification_and_confidence_cppn(best_image, network, args.dataset, transform)
 
         if args.save:
             directory = os.path.join(output_dir, args.dataset, args.network)
