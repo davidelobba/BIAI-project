@@ -34,11 +34,11 @@ def get_classification_and_confidence_cppn(individual, model, dataset, transform
 
     with torch.no_grad():
         if dataset == 'mnist':
-            image = torch.reshape(individual, (1, 1, 224, 224))
+            image = torch.reshape(individual, (1, 1, 224, 224)).to(device)
         else:
-            image = torch.reshape(individual, (1, 3, 224, 224))
+            image = torch.reshape(individual, (1, 3, 224, 224)).to(device)
         if transform is not None:
-            image = transform[dataset](image)
+            image = transform[dataset](image).to(device)
             
         outputs = model(image)
         _, predicted = torch.max(outputs.data, 1)
@@ -71,31 +71,57 @@ def test_model(model, criterion, dataloader, device):
 
     print('Val Loss: {:.4f} Acc: {:.4f}'.format(epoch_loss, epoch_acc))
 
-def dataset_loader():
-    data_transforms = {
+def dataset_loader(dataset):
+    if dataset == "mnist":
+        data_transforms = {
         'train': transforms.Compose([
             transforms.RandomResizedCrop(224),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            transforms.Normalize((0.5,), (0.5,))
         ]),
         'val': transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
             transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            transforms.Normalize((0.5,), (0.5,))
         ]),
-    }
+        }
 
-    trainset = datasets.CIFAR10(root='./data', train=True,
-                                download=True, transform=data_transforms['train'])
-    trainloader = torch.utils.data.DataLoader(trainset, batch_size=1,
-                                              shuffle=True, num_workers=2)
+        trainset = datasets.MNIST(root='./data', train=True,
+                                    download=True, transform=data_transforms['train'])
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=1,
+                                                  shuffle=True, num_workers=2)
 
-    testset = datasets.CIFAR10(root='./data', train=False,
-                               download=True, transform=data_transforms['val'])
-    testloader = torch.utils.data.DataLoader(testset, batch_size=1,
-                                             shuffle=False, num_workers=2)
+        testset = datasets.MNIST(root='./data', train=False,
+                                   download=True, transform=data_transforms['val'])
+        testloader = torch.utils.data.DataLoader(testset, batch_size=1,
+                                                 shuffle=False, num_workers=2)
+    else:
+        data_transforms = {
+            'train': transforms.Compose([
+                transforms.RandomResizedCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ]),
+            'val': transforms.Compose([
+                transforms.Resize(256),
+                transforms.CenterCrop(224),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ]),
+        }
+
+        trainset = datasets.CIFAR10(root='./data', train=True,
+                                    download=True, transform=data_transforms['train'])
+        trainloader = torch.utils.data.DataLoader(trainset, batch_size=1,
+                                                  shuffle=True, num_workers=2)
+
+        testset = datasets.CIFAR10(root='./data', train=False,
+                                   download=True, transform=data_transforms['val'])
+        testloader = torch.utils.data.DataLoader(testset, batch_size=1,
+                                                 shuffle=False, num_workers=2)
 
     dataloader = {'train': trainloader, 'val': testloader}
     

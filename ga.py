@@ -29,12 +29,12 @@ def run_ga(args, weights_path):
     network = loader.load_network(weights_path, device)
 
     if args.test:
-        dataloader = dataset_loader()
+        dataloader = dataset_loader(args.dataset)
         criterion = nn.CrossEntropyLoss()
         test_model(network, criterion, dataloader['val'], device)
 
     if args.wandb:
-        wandb.init(project="BIAI_project", config={"algorithm": "Genetic Algorithm", "dataset": args.dataset}, name = config['network'])
+        wandb.init(project="BIAI_project", config=vars(args), name=f"{args.algorithm}_{args.network}_{args.dataset}")
 
     toolbox = create_ga_toolbox(fitness, args.dataset)
 
