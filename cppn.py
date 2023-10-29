@@ -35,7 +35,7 @@ def run_cppn(args, weights_path):
         test_model(network, criterion, dataloader['val'], device)
 
     if args.wandb:
-        wandb.init(project="BIAI_project", config={"algorithm": "CPPN", "dataset": args.dataset}, name = config['network'])
+        wandb.init(project="BIAI_project", config=vars(args), name=f"{args.algorithm}_{args.network}_{args.dataset}")
 
     dim_z, ch = config['cppn']['dim_z'], config['cppn']['ch']
     dim_y, dim_x, scale = config['cppn']['dim_y'], config['cppn']['dim_x'], config['cppn']['scale']

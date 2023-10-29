@@ -37,7 +37,7 @@ def run_pso(args, weights_path):
         test_model(network, criterion, dataloader['val'], device)
 
     if args.wandb:
-        wandb.init(project="BIAI_project", config={"algorithm": "PSO", "dataset": args.dataset}, name = config['network'])
+        wandb.init(project="BIAI_project", config=vars(args), name=f"{args.algorithm}_{args.network}_{args.dataset}")
 
     toolbox = create_pso_toolbox(fitness, args.dataset)
 

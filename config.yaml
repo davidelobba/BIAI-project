@@ -2,7 +2,7 @@ ga:
   population_size: 100
   crossover_probability: 0.2
   mutation_probability: 0.9
-  generations: 300
+  generations: 1000
   max_mutpb: 0.9
   min_mutpb: 0.5
   mutpb_delta: 0.01
@@ -19,7 +19,7 @@ cma_es:
   learning_rate: 0.1
 
 cppn:
-  population_size: 500
+  population_size: 100
   crossover_probability: 0.5
   mutation_probability: 0.5
   generations: 50

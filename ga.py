@@ -111,6 +111,7 @@ def run_ga(args, weights_path):
         if args.wandb:
             wandb.log({
                 "Generation": g,
+                "Pop size": POP_SIZE,
                 "Min Fitness": min(fits),
                 "Max Fitness": max(fits),
                 "Average Fitness": mean,

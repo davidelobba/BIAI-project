@@ -36,7 +36,7 @@ def run_cma_es(args, weights_path):
         test_model(network, criterion, dataloader['val'], device)
 
     if args.wandb:
-        wandb.init(project="BIAI_project", config={"algorithm": "CMA-ES", "dataset": args.dataset}, name = config['network'])
+        wandb.init(project="BIAI_project", config=vars(args), name=f"{args.algorithm}_{args.network}_{args.dataset}")
 
     SIGMA, POP_SIZE, NGEN = config['cma_es']['sigma'], config['cma_es']['population_size'], config['cma_es']['generations']
     toolbox = create_cma_es_toolbox(fitness, args.dataset, sigma=SIGMA, population_size=POP_SIZE)

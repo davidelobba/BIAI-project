@@ -20,7 +20,8 @@ def create_ga_toolbox(fitness, dataset):
 
     toolbox.register("evaluate", fitness)
     toolbox.register("mate", tools.cxTwoPoint)
-    toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.1, indpb=0.1)
+    #toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.1, indpb=0.1)
+    toolbox.register("mutate", clip_mutation, mu=0, sigma=0.1, indpb=0.1)
     toolbox.register("select", tools.selTournament, tournsize=3)
 
     return toolbox
@@ -43,7 +44,7 @@ def create_cma_es_toolbox(fitness, dataset, sigma=0.5, population_size=10):
     return toolbox
 
 
-def create_cppn_toolbox(fitness, cppn_model, ind_size, network, dataset):    
+def create_cppn_toolbox(fitness, ind_size):    
     creator.create("FitnessMax", base.Fitness, weights=(1.0,))
     creator.create("Individual", list, fitness=creator.FitnessMax)
 
@@ -75,3 +76,11 @@ def create_pso_toolbox(fitness, dataset):
     toolbox.register("evaluate", fitness)
 
     return toolbox
+
+def clip_mutation(individual, *args, **kwargs):
+    tools.mutGaussian(individual, *args, **kwargs)
+    for i in range(len(individual)):
+        individual[i] = min(max(0, individual[i]), 1)
+    return individual,
+    
+    
