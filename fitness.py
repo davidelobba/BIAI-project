@@ -3,10 +3,9 @@ import torch
 import torch.nn.functional as F
 from utils import upsample_numpy_image
 from cppn_init import load_weights_into_cppn
-from PIL import Image
 
 
-def fitness_ga(individual, model, dataset, transform=None):
+def fitness_ga(individual, model, dataset, transform=None, target_class=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     if dataset == 'mnist':
@@ -19,14 +18,18 @@ def fitness_ga(individual, model, dataset, transform=None):
 
     with torch.no_grad():
         outputs = model(image)
-        _, predicted = torch.max(outputs.data, 1)
-        confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
+        _, predicted = torch.max(outputs, 1)
+        if target_class is not None:
+            confidence = F.softmax(outputs, dim=1)[0][target_class]
+        else:
+            confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
 
     return (confidence,)
 
-def fitness_cma_es(individual, model, dataset, transform=None):
+def fitness_cma_es(individual, model, dataset, transform=None, target_class=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
+    
     if dataset == 'mnist':
         image = upsample_numpy_image(np.array(individual).reshape((1, 32, 32)), dataset)
     else:
@@ -41,14 +44,16 @@ def fitness_cma_es(individual, model, dataset, transform=None):
 
     with torch.no_grad():
         outputs = model(image).to(device)
-        _, predicted = torch.max(outputs.data, 1)
-        confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
+        _, predicted = torch.max(outputs, 1)
+        if target_class is not None:
+            confidence = F.softmax(outputs, dim=1)[0][target_class]
+        else:
+            confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
 
     return (confidence,)
 
-def fitness_cppn(individual, cppn, model, dataset, z_scaled, x, y, r, transform=None,):
+def fitness_cppn(individual, cppn, model, dataset, z_scaled, x, y, r, transform=None, target_class=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
     cppn = load_weights_into_cppn(cppn, individual)
 
     with torch.no_grad():
@@ -65,12 +70,15 @@ def fitness_cppn(individual, cppn, model, dataset, z_scaled, x, y, r, transform=
             image = transform[dataset](image)
 
         outputs = model(image).to(device)
-        _, predicted = torch.max(outputs.data, 1)
-        confidence = torch.nn.functional.softmax(outputs, dim=1)[0][predicted.item()]
+        _, predicted = torch.max(outputs, 1)
+        if target_class is not None:
+            confidence = F.softmax(outputs, dim=1)[0][target_class]
+        else:
+            confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
 
     return (confidence,)
 
-def fitness_pso(particle, model, dataset, transform=None):
+def fitness_pso(particle, model, dataset, transform=None, target_class=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     if dataset == 'mnist':
@@ -83,35 +91,10 @@ def fitness_pso(particle, model, dataset, transform=None):
 
     with torch.no_grad():
         outputs = model(image).to(device)
-        _, predicted = torch.max(outputs.data, 1)
-        confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
+        _, predicted = torch.max(outputs, 1)
+        if target_class is not None:
+            confidence = F.softmax(outputs, dim=1)[0][target_class]
+        else:
+            confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
 
     return (confidence,)
-
-def fitness_prova(individual, model, target_class=None, temperature = 1):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    image = torch.tensor(np.array(individual).reshape((3, 224, 224))).float().unsqueeze(0).to(device)
-
-    with torch.no_grad():
-        outputs = model(image)
-        _, predicted = torch.max(outputs.data, 1)
-
-        # Applying temperature scaling to the logits before softmax
-        outputs = outputs / temperature
-
-        confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
-
-    # Targeted attack: reward if predicted is target_class and confidence is high
-    if target_class is not None:
-        if predicted.item() == target_class:
-            return confidence.item()
-        else:
-            return 0.0
-
-    # Untargeted attack: penalize high confidence for arbitrary "true" class (e.g., 0)
-    # and reward high confidence for any other class
-    else:
-        if predicted.item() == 0:
-            return 1.0 - confidence.item()
-        else:
-            return confidence.item()

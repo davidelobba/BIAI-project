@@ -4,6 +4,7 @@ from tqdm import tqdm
 import yaml
 from torchvision import datasets, transforms
 from PIL import Image
+import torch.nn.functional as F
 
 
 def upsample_numpy_image(image_np, target_size=(224, 224)):
@@ -11,7 +12,8 @@ def upsample_numpy_image(image_np, target_size=(224, 224)):
     image_pil_upsampled = image_pil.resize(target_size, Image.BILINEAR)
     return np.array(image_pil_upsampled).transpose(2, 0, 1) / 255.0
 
-def get_classification_and_confidence(individual, model, dataset, transform=None):
+
+def get_classification_and_confidence(individual, model, dataset, transform=None, target_class=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
     if dataset == 'mnist':
@@ -24,12 +26,17 @@ def get_classification_and_confidence(individual, model, dataset, transform=None
 
     with torch.no_grad():
         outputs = model(image)
-        _, predicted = torch.max(outputs.data, 1)
-        confidence = torch.nn.functional.softmax(outputs, dim=1)[0][predicted.item()]
+        _, predicted = torch.max(outputs, 1)
 
-    return predicted.item(), confidence.item()
+        if target_class is not None:
+            confidence = F.softmax(outputs, dim=1)[0][target_class]
+            return target_class, confidence.item()
+        else:
+            confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
+            return predicted.item(), confidence.item()
 
-def get_classification_and_confidence_cppn(individual, model, dataset, transform):
+
+def get_classification_and_confidence_cppn(individual, model, dataset, transform=None, target_class=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
     with torch.no_grad():
@@ -42,10 +49,13 @@ def get_classification_and_confidence_cppn(individual, model, dataset, transform
             
         outputs = model(image)
         _, predicted = torch.max(outputs.data, 1)
-        confidence = torch.nn.functional.softmax(outputs, dim=1)[0][predicted.item()]
 
-
-    return predicted.item(), confidence.item()
+        if target_class is not None:
+            confidence = F.softmax(outputs, dim=1)[0][target_class]
+            return target_class, confidence.item()
+        else:
+            confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
+            return predicted.item(), confidence.item()
 
 def test_model(model, criterion, dataloader, device):
     model.eval()   # Set model to evaluate mode
