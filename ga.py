@@ -71,14 +71,14 @@ def run_ga(args, weights_path):
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         for ind in tqdm(invalid_ind, desc="Evaluating individuals", leave=False):
-            ind.fitness.values = toolbox.evaluate(ind, network, args.dataset, transform)
+            ind.fitness.values = toolbox.evaluate(ind, network, args.dataset, transform, args.class_constraint)
+
 
         print("Evaluated %i individuals" % len(invalid_ind))
 
         pop[:] = offspring
 
         fits = [ind.fitness.values[0] for ind in pop]
-        avg_fit = sum(fits) / len(fits)
 
         if args.adaptive_mutation_crossover:
             best_fitness_current_gen = max(fits)
@@ -122,7 +122,7 @@ def run_ga(args, weights_path):
         best_ind = tools.selBest(pop, 1)[0]
 
         # Get the classification label and confidence
-        label, confidence = get_classification_and_confidence(best_ind, network, args.dataset, transform)
+        label, confidence = get_classification_and_confidence(best_ind, network, args.dataset, transform, args.class_constraint)
 
         if args.dataset == 'mnist':
             best_image = torch.tensor(np.array(best_ind).reshape((1, 224, 224))).float()
