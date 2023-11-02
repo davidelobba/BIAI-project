@@ -98,6 +98,8 @@ def run_cma_es(args, weights_path):
 
         if args.save:
             directory = os.path.join(output_dir, args.dataset, args.network)
+            if args.class_constraint is not None:
+                directory = directory + f'/{args.class_constraint}'
             if not os.path.exists(directory):
                 os.makedirs(directory)
 
