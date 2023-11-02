@@ -46,7 +46,7 @@ def run_cma_es(args, weights_path):
     invalid_ind = [ind for ind in pop if not ind.fitness.valid]
 
     for ind in tqdm(invalid_ind, desc="Evaluating initial population", leave=False):
-        ind.fitness.values = toolbox.evaluate(ind, network, args.dataset, transform)
+        ind.fitness.values = toolbox.evaluate(ind, network, args.dataset, transform, args.class_constraint)
 
     for g in range(NGEN):
         offspring = toolbox.generate()
@@ -54,7 +54,7 @@ def run_cma_es(args, weights_path):
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         for ind in tqdm(invalid_ind, desc=f"Evaluating generation {g}", leave=False):
-            ind.fitness.values = toolbox.evaluate(ind, network, args.dataset, transform)
+            ind.fitness.values = toolbox.evaluate(ind, network, args.dataset, transform, args.class_constraint)
 
         toolbox.update(offspring)
 
@@ -75,6 +75,7 @@ def run_cma_es(args, weights_path):
         if args.wandb:
             wandb.log({
                 "Generation": g,
+                "Pop size": POP_SIZE,
                 "Min Fitness": min(fits),
                 "Max Fitness": max(fits),
                 "Average Fitness": mean,
@@ -88,7 +89,7 @@ def run_cma_es(args, weights_path):
         else:
             best_ind_upsampled = upsample_numpy_image(np.array(best_ind).reshape((3, 32, 32)), dataset=args.dataset)
 
-        label, confidence = get_classification_and_confidence(best_ind_upsampled, network, dataset=args.dataset, transform=transform)
+        label, confidence = get_classification_and_confidence(best_ind_upsampled, network, dataset=args.dataset, transform=transform, target_class=args.class_constraint)
 
         if args.dataset == 'mnist':
             best_image = torch.tensor(best_ind_upsampled.reshape((1, 224, 224))).float()
