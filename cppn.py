@@ -83,7 +83,7 @@ def run_cppn(args, weights_path):
         invalid_ind = [ind for ind in offspring if not ind.fitness.valid]
 
         for ind in tqdm(invalid_ind, desc="Evaluating individuals", leave=False):
-            ind.fitness.values = toolbox.evaluate(ind, cppn_model, network, args.dataset, z_scaled, x, y, r, transform)
+            ind.fitness.values = toolbox.evaluate(ind, cppn_model, network, args.dataset, z_scaled, x, y, r, transform, args.class_constraint)
 
         print("Evaluated %i individuals" % len(invalid_ind))
 
@@ -104,6 +104,7 @@ def run_cppn(args, weights_path):
         if args.wandb:
             wandb.log({
                 "Generation": g,
+                "Pop size": POP_SIZE,
                 "Min Fitness": min(fits),
                 "Max Fitness": max(fits),
                 "Average Fitness": mean,
@@ -123,7 +124,7 @@ def run_cppn(args, weights_path):
                 best_image = best_image.view(-1, 224, 224, 3).cpu()
                 best_image = best_image.permute((0, 3, 1, 2))
 
-            label, confidence = get_classification_and_confidence_cppn(best_image, network, args.dataset, transform)
+            label, confidence = get_classification_and_confidence_cppn(best_image, network, args.dataset, transform, args.class_constraint)
 
         if args.save:
             directory = os.path.join(output_dir, args.dataset, args.network)
