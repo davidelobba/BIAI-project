@@ -24,6 +24,7 @@ def main():
     parser.set_defaults(save=False)
     parser.add_argument('--adaptive-mutation-crossover', dest='adaptive_mutation_crossover', action='store_true', help='Use adaptive mutation and crossover')
     parser.add_argument('--normalize', dest='normalize', action='store_true', help='Use normalization')
+    parser.add_argument('--class-constraint', type=int, choices=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9], default=None, help='Class constraint for the algorithm' )
     
     args = parser.parse_args()
     if args.dataset != 'imagenet':
