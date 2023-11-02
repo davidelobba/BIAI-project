@@ -65,7 +65,7 @@ def run_pso(args, weights_path):
                 particle.speed[i] = inertia + cognitive + social
                 particle[i] += particle.speed[i]
 
-            particle.fitness.values = toolbox.evaluate(particle, network, args.dataset, transform)
+            particle.fitness.values = toolbox.evaluate(particle, network, args.dataset, transform, args.class_constraint)
 
             if particle.fitness > particle.pbest.fitness:
                 particle.pbest = toolbox.clone(particle)
@@ -84,13 +84,14 @@ def run_pso(args, weights_path):
         if args.wandb:
             wandb.log({
                 "Generation": g,
+                "Pop size": POP_SIZE,
                 "Min Fitness": min(fits),
                 "Max Fitness": max(fits),
                 "Average Fitness": mean,
                 "Standard Deviation": std,
             })
 
-        label, confidence = get_classification_and_confidence(gbest, network, args.dataset, transform)
+        label, confidence = get_classification_and_confidence(gbest, network, args.dataset, transform, args.class_constraint)
 
         if args.dataset == 'mnist':
             best_image = torch.reshape(torch.tensor(gbest), (1, 1, 224, 224))
