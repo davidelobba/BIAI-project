@@ -6,3 +6,4 @@ dataset.py
 inference.py
 run_main.sh
 results/
+biai_venv/

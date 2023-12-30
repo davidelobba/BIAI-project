@@ -51,7 +51,7 @@ class CPPN(nn.Module):
 
 def get_coordinates(dim_x, dim_y, scale=1.0, batch_size=1):
     '''
-    calculates and returns a vector of x and y coordintes, and corresponding radius from the centre of image.
+    calculates and returns a vector of x and y coordinates, and corresponding radius from the centre of image.
     '''
     n_points = dim_x * dim_y
     x_range = scale * (np.arange(dim_x) - (dim_x - 1) / 2.0) / (dim_x - 1) / 0.5

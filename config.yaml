@@ -2,7 +2,7 @@ ga:
   population_size: 100
   crossover_probability: 0.2
   mutation_probability: 0.9
-  generations: 1000
+  generations: 2000
   max_mutpb: 0.9
   min_mutpb: 0.5
   mutpb_delta: 0.01
@@ -13,16 +13,16 @@ ga:
 
 
 cma_es:
-  population_size: 1000
-  generations: 100
-  sigma: 0.5
+  population_size: 100
+  generations: 2000
+  sigma: 0.1
   learning_rate: 0.1
 
 cppn:
   population_size: 100
   crossover_probability: 0.5
   mutation_probability: 0.5
-  generations: 50
+  generations: 1000
   dim_z: 32
   dim_x: 224
   dim_y: 224
@@ -30,8 +30,8 @@ cppn:
   scale: 10.0
 
 pso:
-  population_size: 40
-  generations: 10
+  population_size: 100
+  generations: 1000
   inertia: 0.5
   cognitive_coefficient: 0.5
   social_coefficient: 0.5
