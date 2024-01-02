@@ -14,8 +14,8 @@ ga:
 
 cma_es:
   population_size: 100
-  generations: 2000
-  sigma: 0.1
+  generations: 700
+  sigma: 0.3
   learning_rate: 0.1
 
 cppn:
@@ -28,10 +28,3 @@ cppn:
   dim_y: 224
   ch: 32
   scale: 10.0
-
-pso:
-  population_size: 100
-  generations: 1000
-  inertia: 0.5
-  cognitive_coefficient: 0.5
-  social_coefficient: 0.5

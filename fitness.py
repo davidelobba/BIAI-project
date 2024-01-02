@@ -77,24 +77,3 @@ def fitness_cppn(individual, cppn, model, dataset, z_scaled, x, y, r, transform=
             confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
 
     return (confidence,)
-
-def fitness_pso(particle, model, dataset, transform=None, target_class=None):
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = model.to(device)
-    if dataset == 'mnist':
-        image = torch.reshape(torch.tensor(particle), (1, 1, 224, 224)).to(device)
-    else:
-        image = torch.reshape(torch.tensor(particle), (1, 3, 224, 224)).to(device)
-
-    if transform is not None:
-        image = transform[dataset](image)
-
-    with torch.no_grad():
-        outputs = model(image).to(device)
-        _, predicted = torch.max(outputs, 1)
-        if target_class is not None:
-            confidence = F.softmax(outputs, dim=1)[0][target_class]
-        else:
-            confidence = F.softmax(outputs, dim=1)[0][predicted.item()]
-
-    return (confidence,)

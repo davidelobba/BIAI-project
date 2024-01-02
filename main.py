@@ -1,13 +1,12 @@
 import argparse
 import ga
-import pso
 import cma_es
 import cppn
 import os
 
 def main():
     parser = argparse.ArgumentParser(description='Run evolutionary algorithms.')
-    parser.add_argument('--algorithm', type=str, choices=['ga', 'pso', 'cma_es', 'cppn'], default='ga', help='Algorithm to run')
+    parser.add_argument('--algorithm', type=str, choices=['ga', 'cma_es', 'cppn'], default='ga', help='Algorithm to run')
     parser.add_argument('--config-path', type=str, required=True, help='Path to configuration file')
     parser.add_argument('--weights-path', type=str, default=None, help='Path to weights file')
     parser.add_argument('--network', type=str, choices=['resnet18', 'resnet34', 'resnet50'], default='resnet18', help='Name of the network')
@@ -37,10 +36,6 @@ def main():
     if args.algorithm == 'ga':
         args.output_dir = os.path.join(args.output_dir, 'ga')
         ga.run_ga(args, weights_path)
-
-    elif args.algorithm == 'pso':
-        args.output_dir = os.path.join(args.output_dir, 'pso')
-        pso.run_pso(args, weights_path)
     
     elif args.algorithm == 'cma_es':
         args.output_dir = os.path.join(args.output_dir, 'cma_es')

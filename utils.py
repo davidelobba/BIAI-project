@@ -6,13 +6,6 @@ from torchvision import datasets, transforms
 from PIL import Image
 import torch.nn.functional as F
 
-
-def upsample_numpy_image(image_np, target_size=(224, 224)):
-    image_pil = Image.fromarray((image_np * 255).astype(np.uint8).transpose(1, 2, 0))
-    image_pil_upsampled = image_pil.resize(target_size, Image.BILINEAR)
-    return np.array(image_pil_upsampled).transpose(2, 0, 1) / 255.0
-
-
 def get_classification_and_confidence(individual, model, dataset, transform=None, target_class=None):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     
@@ -58,7 +51,7 @@ def get_classification_and_confidence_cppn(individual, model, dataset, transform
             return predicted.item(), confidence.item()
 
 def test_model(model, criterion, dataloader, device):
-    model.eval()   # Set model to evaluate mode
+    model.eval()
 
     running_loss = 0.0
     running_corrects = 0
