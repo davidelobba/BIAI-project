@@ -11,6 +11,9 @@ def weights_init(m):
 
 
 class CPPN(nn.Module):
+    '''
+    Code adapted from https://github.com/rystylee/pytorch-cppn-gan
+    '''
     def __init__(self, dim_z, dim_c, ch):
         super(CPPN, self).__init__()
         dim_z = dim_z
